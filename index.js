@@ -38,40 +38,33 @@ function boot() {
 
     app.use("*", requestBodyJSONMiddleware);
 
-    function restore(req, res) {
-        console.log("restoring data");
-        try {
+    function executeCommand(cmd, args, res) {
+        let spawnProcess = child_process.spawn(cmd, args)
+        spawnProcess.stdout.on('data', (data) => {
+            console.log(data);
+        });
 
-            const res = child_process.execSync(`aws s3 sync ${config.s3BucketURI} ${config.pathToFolder}`)
-            console.log(res.toString());
-        } catch (e) {
-            console.log(e);
-            res.statusCode = 500;
-            res.end(e.message);
-            return;
-        }
+        spawnProcess.stderr.on('data', (data) => {
+            console.error(`error: ${data}`);
+        });
+
+        spawnProcess.on('close', (code) => {
+            console.log(`child process exited with code ${code}`);
+        });
 
         res.statusCode = 200;
         res.end();
     }
 
-    function backup(req, res) {
-        console.log("backing up data");
-        console.log()
-        try {
-            let cmd = `aws s3 sync ${config.pathToFolder} ${config.s3BucketURI}`;
-            console.log(cmd)
-            const res = child_process.execSync(cmd)
-            console.log("Res", res);
-        } catch (e) {
-            console.log("Got error", e);
-            res.statusCode = 500;
-            res.end(e.message);
-            return;
-        }
+    function restore(req, res) {
+        console.log(`restoring data from ${config.s3BucketURI} to ${config.pathToFolder} ...`);
+        executeCommand(`aws`, [`s3`, `sync`, `${config.s3BucketURI}`, `${config.pathToFolder}`], res)
 
-        res.statusCode = 200;
-        res.end();
+    }
+
+    function backup(req, res) {
+        console.log(`backing up data from ${config.pathToFolder} to ${config.s3BucketURI} ...`);
+        executeCommand(`aws`, [`s3`, `sync`, `${config.pathToFolder}`, `${config.s3BucketURI}`], res)
     }
 
     app.post("/epi/restore", restore);
