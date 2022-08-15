@@ -21,6 +21,7 @@ function requestBodyJSONMiddleware(request, response, next) {
 
 function boot() {
     const config = require("./config.json");
+    let port = config.port || 3000;
     const express = require('express');
     const child_process = require("child_process");
     let app = express();
@@ -77,7 +78,12 @@ function boot() {
 
     app.post("/epi/backup", backup);
 
-    let server = app.listen(config.port);
+    app.get("/epi/check", function(req, res){
+        res.statusCode = 200;
+        res.end();
+    });
+
+    let server = app.listen(port);
 
     process.on('SIGTERM', () => {
         console.log('SIGTERM signal received: closing backup and restore server');
@@ -86,7 +92,7 @@ function boot() {
         });
     });
 
-    console.log('Backup and restore server is ready. Listening on port', config.port);
+    console.log('Backup and restore server is ready. Listening on port', port);
 }
 
 boot();
