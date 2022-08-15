@@ -41,11 +41,17 @@ function boot() {
     function executeCommand(cmd, args, res) {
         let spawnProcess = child_process.spawn(cmd, args)
         spawnProcess.stdout.on('data', (data) => {
+            if (typeof data !== "string") {
+                data = data.toString();
+            }
             console.log(data);
         });
 
         spawnProcess.stderr.on('data', (data) => {
-            console.error(`error: ${data}`);
+            if (typeof data !== "string") {
+                data = data.toString();
+            }
+            console.error(`error: ${data.toString()}`);
         });
 
         spawnProcess.on('close', (code) => {
